@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import { ShoppingListItem, Product, ProductCategory } from "@/services/productService";
@@ -69,25 +70,28 @@ export const fetchShoppingListItems = async (listId: string): Promise<ShoppingLi
   }
 
   // Transform back to our app's data model
-  return data.map(item => ({
-    id: item.id,
-    text: item.text,
-    category: item.category as ProductCategory,
-    quantity: item.quantity || 1,
-    product: item.product_id ? {
-      id: item.product_id,
-      name: item.product_name || "",
-      price: item.product_price || 0,
-      image: item.product_image || "",
-      store: item.product_store || "",
-      category: item.category as ProductCategory, // Add missing category
-      description: "", // Add missing description
-      inStock: true, // Add missing inStock
-      alternatives: []
-    } : undefined,
-    alternatives: [],
-    isProcessing: false
-  }));
+  return data.map(item => {
+    // Ensure store is either "Walmart" or "Instacart"
+    const productStore = item.product_store as "Walmart" | "Instacart" | undefined;
+    
+    return {
+      id: item.id,
+      text: item.text,
+      category: item.category as ProductCategory,
+      quantity: item.quantity || 1,
+      product: item.product_id ? {
+        id: item.product_id,
+        name: item.product_name || "",
+        price: item.product_price || 0,
+        image: item.product_image || "",
+        store: productStore || "Walmart", // Default to Walmart if undefined
+        category: item.category as ProductCategory,
+        description: "", // Add missing description
+        inStock: true, // Add missing inStock
+      } : undefined,
+      isProcessing: false
+    };
+  });
 };
 
 export const getUserShoppingLists = async (userId: string): Promise<ShoppingList[]> => {
