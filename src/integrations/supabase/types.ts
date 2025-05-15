@@ -9,7 +9,119 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      shopping_list_items: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          list_id: string
+          product_id: string | null
+          product_image: string | null
+          product_name: string | null
+          product_price: number | null
+          product_store: string | null
+          quantity: number | null
+          text: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          list_id: string
+          product_id?: string | null
+          product_image?: string | null
+          product_name?: string | null
+          product_price?: number | null
+          product_store?: string | null
+          quantity?: number | null
+          text: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          list_id?: string
+          product_id?: string | null
+          product_image?: string | null
+          product_name?: string | null
+          product_price?: number | null
+          product_store?: string | null
+          quantity?: number | null
+          text?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_list_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "shopping_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shopping_lists: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string | null
+          dairy_free: boolean | null
+          gluten_free: boolean | null
+          id: string
+          organic: boolean | null
+          preferred_store: string | null
+          price_preference: string | null
+          updated_at: string | null
+          vegan: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          dairy_free?: boolean | null
+          gluten_free?: boolean | null
+          id: string
+          organic?: boolean | null
+          preferred_store?: string | null
+          price_preference?: string | null
+          updated_at?: string | null
+          vegan?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          dairy_free?: boolean | null
+          gluten_free?: boolean | null
+          id?: string
+          organic?: boolean | null
+          preferred_store?: string | null
+          price_preference?: string | null
+          updated_at?: string | null
+          vegan?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

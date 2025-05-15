@@ -1,7 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PreferencesForm, UserPreferences } from "@/components/settings/PreferencesForm";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
+import { fetchUserPreferences, saveUserPreferences } from "@/services/preferencesService";
+import { Loader2 } from "lucide-react";
 
 const Preferences = () => {
   const [preferences, setPreferences] = useState<UserPreferences>({
@@ -14,11 +18,66 @@ const Preferences = () => {
     },
     pricePreference: "mid-range",
   });
+  
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const handleSavePreferences = (newPreferences: UserPreferences) => {
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+        const userPrefs = await fetchUserPreferences(user.id);
+        
+        if (userPrefs) {
+          // Map from database format to component format
+          setPreferences({
+            preferredStore: userPrefs.preferred_store as UserPreferences["preferredStore"],
+            dietaryRestrictions: {
+              organic: userPrefs.organic || false,
+              glutenFree: userPrefs.gluten_free || false,
+              dairyFree: userPrefs.dairy_free || false,
+              vegan: userPrefs.vegan || false,
+            },
+            pricePreference: userPrefs.price_preference as UserPreferences["pricePreference"],
+          });
+        }
+      } catch (error) {
+        console.error("Error loading preferences:", error);
+        toast({
+          title: "Failed to load preferences",
+          description: "We couldn't load your saved preferences.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPreferences();
+  }, [user, toast]);
+
+  const handleSavePreferences = async (newPreferences: UserPreferences) => {
     setPreferences(newPreferences);
-    // In a real app, this would save to the user's profile in the backend
+    
+    if (user) {
+      try {
+        await saveUserPreferences(user.id, newPreferences);
+      } catch (error) {
+        console.error("Error saving preferences:", error);
+      }
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-6 px-4 md:px-6">

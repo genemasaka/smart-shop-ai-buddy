@@ -1,19 +1,37 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ShoppingListInput } from "@/components/shopping/ShoppingListInput";
 import { ShoppingCart } from "@/components/shopping/ShoppingCart";
 import { ShoppingListItem, processShoppingList, Product } from "@/services/productService";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { createShoppingList, saveShoppingListItems } from "@/services/shoppingListService";
+import { v4 as uuidv4 } from "uuid";
 
 const ShoppingList = () => {
   const [items, setItems] = useState<ShoppingListItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentListId, setCurrentListId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleSubmitList = async (listText: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to create a shopping list.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
     
     try {
+      // Create a new shopping list in database
+      const list = await createShoppingList(user.id);
+      setCurrentListId(list.id);
+      
       // Process each item and update the UI as they complete
       await processShoppingList(listText, (updatedItem) => {
         setItems(currentItems => {
@@ -30,6 +48,11 @@ const ShoppingList = () => {
           }
         });
       });
+      
+      // Save all items to the database
+      if (items.length > 0 && list.id) {
+        await saveShoppingListItems(list.id, items);
+      }
       
       toast({
         title: "Shopping list processed",
@@ -53,7 +76,17 @@ const ShoppingList = () => {
         item.id === id ? { ...item, quantity } : item
       )
     );
-  }, []);
+    
+    // Save changes to database if we have a list ID
+    if (currentListId && user) {
+      const updatedItems = items.map(item => 
+        item.id === id ? { ...item, quantity } : item
+      );
+      saveShoppingListItems(currentListId, updatedItems).catch(error => {
+        console.error("Error saving updated quantity:", error);
+      });
+    }
+  }, [items, currentListId, user]);
 
   const handleSelectAlternative = useCallback((id: string, product: Product) => {
     setItems(currentItems => 
@@ -61,10 +94,21 @@ const ShoppingList = () => {
         item.id === id ? { ...item, product } : item
       )
     );
-  }, []);
+    
+    // Save changes to database if we have a list ID
+    if (currentListId && user) {
+      const updatedItems = items.map(item => 
+        item.id === id ? { ...item, product } : item
+      );
+      saveShoppingListItems(currentListId, updatedItems).catch(error => {
+        console.error("Error saving product selection:", error);
+      });
+    }
+  }, [items, currentListId, user]);
 
   const handleReset = useCallback(() => {
     setItems([]);
+    setCurrentListId(null);
   }, []);
 
   return (
