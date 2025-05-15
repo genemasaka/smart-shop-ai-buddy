@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
-import { ShoppingListItem, Product } from "@/services/productService";
+import { ShoppingListItem, Product, ProductCategory } from "@/services/productService";
 
 export type ShoppingList = {
   id: string;
@@ -73,7 +73,7 @@ export const fetchShoppingListItems = async (listId: string): Promise<ShoppingLi
   return data.map(item => ({
     id: item.id,
     text: item.text,
-    category: item.category,
+    category: item.category as ProductCategory, // Cast the string to ProductCategory type
     quantity: item.quantity || 1,
     product: item.product_id ? {
       id: item.product_id,
@@ -84,7 +84,7 @@ export const fetchShoppingListItems = async (listId: string): Promise<ShoppingLi
       alternatives: []
     } : undefined,
     alternatives: [],
-    isProcessing: false // Add the missing isProcessing property
+    isProcessing: false
   }));
 };
 
