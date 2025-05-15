@@ -32,17 +32,7 @@ const Preferences = () => {
         const userPrefs = await fetchUserPreferences(user.id);
         
         if (userPrefs) {
-          // Map from database format to component format
-          setPreferences({
-            preferredStore: userPrefs.preferred_store as UserPreferences["preferredStore"],
-            dietaryRestrictions: {
-              organic: userPrefs.organic || false,
-              glutenFree: userPrefs.gluten_free || false,
-              dairyFree: userPrefs.dairy_free || false,
-              vegan: userPrefs.vegan || false,
-            },
-            pricePreference: userPrefs.price_preference as UserPreferences["pricePreference"],
-          });
+          setPreferences(userPrefs);
         }
       } catch (error) {
         console.error("Error loading preferences:", error);

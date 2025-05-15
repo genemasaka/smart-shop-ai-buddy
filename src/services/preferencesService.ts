@@ -14,7 +14,19 @@ export const fetchUserPreferences = async (userId: string) => {
     return null;
   }
 
-  return data as UserPreferences | null;
+  if (!data) return null;
+  
+  // Map from database format (snake_case) to component format (camelCase)
+  return {
+    preferredStore: data.preferred_store as UserPreferences["preferredStore"],
+    dietaryRestrictions: {
+      organic: data.organic || false,
+      glutenFree: data.gluten_free || false,
+      dairyFree: data.dairy_free || false,
+      vegan: data.vegan || false,
+    },
+    pricePreference: data.price_preference as UserPreferences["pricePreference"],
+  } as UserPreferences;
 };
 
 export const saveUserPreferences = async (userId: string, preferences: UserPreferences) => {

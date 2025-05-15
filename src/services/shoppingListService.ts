@@ -83,7 +83,8 @@ export const fetchShoppingListItems = async (listId: string): Promise<ShoppingLi
       store: item.product_store || "",
       alternatives: []
     } : undefined,
-    alternatives: []
+    alternatives: [],
+    isProcessing: false // Add the missing isProcessing property
   }));
 };
 
