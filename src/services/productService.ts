@@ -1,5 +1,4 @@
-import { toast as sonnerToast } from "sonner";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 // Product categories
 export type ProductCategory = 
@@ -318,25 +317,12 @@ export const processShoppingList = async (
           items[index].isProcessing = false;
           callback(items[index]);
         }
-        
-        // Use the toast imported at the top of the file
-        toast({
-          title: "Error",
-          description: `Failed to process "${itemText}". Please try again.`,
-          variant: "destructive"
-        });
       }
     }
     
     return items;
   } catch (error) {
     console.error("Error processing shopping list:", error);
-    // Use the toast imported at the top of the file
-    toast({
-      title: "Error",
-      description: "Failed to process shopping list. Please try again.",
-      variant: "destructive"
-    });
     return items;
   }
 };

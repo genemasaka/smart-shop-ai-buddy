@@ -1,8 +1,9 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { ShoppingListInput } from "@/components/shopping/ShoppingListInput";
 import { ShoppingCart } from "@/components/shopping/ShoppingCart";
 import { ShoppingListItem, processShoppingList, Product } from "@/services/productService";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { createShoppingList, saveShoppingListItems } from "@/services/shoppingListService";
 import { v4 as uuidv4 } from "uuid";
@@ -19,6 +20,15 @@ const ShoppingList = () => {
       toast({
         title: "Authentication required",
         description: "Please sign in to create a shopping list.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!listText.trim()) {
+      toast({
+        title: "Empty list",
+        description: "Please enter some items in your shopping list.",
         variant: "destructive",
       });
       return;
@@ -52,12 +62,18 @@ const ShoppingList = () => {
       // Save all items to the database
       if (processedItems.length > 0 && list.id) {
         await saveShoppingListItems(list.id, processedItems);
+        
+        toast({
+          title: "Shopping list processed",
+          description: "We've found matching products for your items.",
+        });
+      } else {
+        toast({
+          title: "No items processed",
+          description: "No items were found in your list.",
+          variant: "destructive",
+        });
       }
-      
-      toast({
-        title: "Shopping list processed",
-        description: "We've found matching products for your items.",
-      });
     } catch (error) {
       console.error("Error processing shopping list:", error);
       toast({
@@ -79,12 +95,15 @@ const ShoppingList = () => {
     
     // Save changes to database if we have a list ID
     if (currentListId && user) {
-      const updatedItems = items.map(item => 
-        item.id === id ? { ...item, quantity } : item
-      );
-      saveShoppingListItems(currentListId, updatedItems).catch(error => {
-        console.error("Error saving updated quantity:", error);
-      });
+      const updatedItem = items.find(item => item.id === id);
+      if (updatedItem) {
+        const updatedItems = items.map(item => 
+          item.id === id ? { ...item, quantity } : item
+        );
+        saveShoppingListItems(currentListId, updatedItems).catch(error => {
+          console.error("Error saving updated quantity:", error);
+        });
+      }
     }
   }, [items, currentListId, user]);
 
