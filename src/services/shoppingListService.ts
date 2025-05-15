@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import { ShoppingListItem, Product, ProductCategory } from "@/services/productService";
@@ -73,7 +72,7 @@ export const fetchShoppingListItems = async (listId: string): Promise<ShoppingLi
   return data.map(item => ({
     id: item.id,
     text: item.text,
-    category: item.category as ProductCategory, // Cast the string to ProductCategory type
+    category: item.category as ProductCategory,
     quantity: item.quantity || 1,
     product: item.product_id ? {
       id: item.product_id,
@@ -81,6 +80,9 @@ export const fetchShoppingListItems = async (listId: string): Promise<ShoppingLi
       price: item.product_price || 0,
       image: item.product_image || "",
       store: item.product_store || "",
+      category: item.category as ProductCategory, // Add missing category
+      description: "", // Add missing description
+      inStock: true, // Add missing inStock
       alternatives: []
     } : undefined,
     alternatives: [],

@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { ShoppingListInput } from "@/components/shopping/ShoppingListInput";
 import { ShoppingCart } from "@/components/shopping/ShoppingCart";
@@ -26,6 +25,7 @@ const ShoppingList = () => {
     }
 
     setIsProcessing(true);
+    setItems([]); // Clear previous items when starting a new process
     
     try {
       // Create a new shopping list in database
@@ -33,7 +33,7 @@ const ShoppingList = () => {
       setCurrentListId(list.id);
       
       // Process each item and update the UI as they complete
-      await processShoppingList(listText, (updatedItem) => {
+      const processedItems = await processShoppingList(listText, (updatedItem) => {
         setItems(currentItems => {
           const itemIndex = currentItems.findIndex(item => item.id === updatedItem.id);
           
@@ -50,8 +50,8 @@ const ShoppingList = () => {
       });
       
       // Save all items to the database
-      if (items.length > 0 && list.id) {
-        await saveShoppingListItems(list.id, items);
+      if (processedItems.length > 0 && list.id) {
+        await saveShoppingListItems(list.id, processedItems);
       }
       
       toast({

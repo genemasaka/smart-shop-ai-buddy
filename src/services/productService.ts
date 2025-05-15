@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 // Product categories
@@ -319,14 +318,26 @@ export const processShoppingList = async (
           callback(items[index]);
         }
         
-        toast.error(`Failed to process "${itemText}". Please try again.`);
+        // Use import from our use-toast.ts
+        import { toast } from "@/components/ui/use-toast";
+        toast({
+          title: "Error",
+          description: `Failed to process "${itemText}". Please try again.`,
+          variant: "destructive"
+        });
       }
     }
     
     return items;
   } catch (error) {
     console.error("Error processing shopping list:", error);
-    toast.error("Failed to process shopping list. Please try again.");
+    // Use import from our use-toast.ts
+    import { toast } from "@/components/ui/use-toast";
+    toast({
+      title: "Error",
+      description: "Failed to process shopping list. Please try again.",
+      variant: "destructive"
+    });
     return items;
   }
 };
