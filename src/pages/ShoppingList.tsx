@@ -6,7 +6,6 @@ import { ShoppingListItem, processShoppingList, Product } from "@/services/produ
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { createShoppingList, saveShoppingListItems } from "@/services/shoppingListService";
-import { v4 as uuidv4 } from "uuid";
 
 const ShoppingList = () => {
   const [items, setItems] = useState<ShoppingListItem[]>([]);
@@ -40,6 +39,7 @@ const ShoppingList = () => {
     try {
       // Create a new shopping list in database
       const list = await createShoppingList(user.id);
+      console.log("Created shopping list:", list);
       setCurrentListId(list.id);
       
       // Process each item and update the UI as they complete

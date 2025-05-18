@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import { ShoppingListItem, Product, ProductCategory } from "@/services/productService";
@@ -12,21 +11,34 @@ export type ShoppingList = {
 };
 
 export const createShoppingList = async (userId: string, name = "Shopping List") => {
+  // Create the shopping list without using select in the same query
   const { data, error } = await supabase
     .from('shopping_lists')
     .insert({
       user_id: userId,
       name
-    })
-    .select()
-    .single();
+    });
 
   if (error) {
     console.error("Error creating shopping list:", error);
     throw error;
   }
 
-  return data;
+  // Fetch the created record in a separate query
+  const { data: createdList, error: fetchError } = await supabase
+    .from('shopping_lists')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (fetchError) {
+    console.error("Error fetching created shopping list:", fetchError);
+    throw fetchError;
+  }
+
+  return createdList;
 };
 
 export const saveShoppingListItems = async (listId: string, items: ShoppingListItem[]) => {
