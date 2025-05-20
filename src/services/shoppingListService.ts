@@ -48,13 +48,17 @@ export const createShoppingList = async (userId: string, name = "Shopping List")
 
 export const saveShoppingListItems = async (listId: string, items: ShoppingListItem[]) => {
   try {
+    console.log("Saving items with listId:", listId);
+    console.log("Items to save:", items);
+    
     // Format items for Supabase, ensuring IDs are valid UUIDs
     const formattedItems = items.map(item => {
-      // Check if the item ID is a valid UUID or needs to be replaced
+      // Always generate a new UUID if the existing ID isn't a valid UUID
       const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id);
+      const itemId = isValidUuid ? item.id : crypto.randomUUID();
       
       return {
-        id: isValidUuid ? item.id : crypto.randomUUID(),
+        id: itemId,
         list_id: listId,
         text: item.text,
         category: item.category,
@@ -66,6 +70,8 @@ export const saveShoppingListItems = async (listId: string, items: ShoppingListI
         quantity: item.quantity,
       };
     });
+
+    console.log("Formatted items:", formattedItems);
 
     const { error } = await supabase
       .from('shopping_list_items')

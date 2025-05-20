@@ -397,20 +397,16 @@ export const processShoppingList = async (
           callback(items[index]);
         }
         
-        // Fix the toast calls
-        toast({
-          description: `Failed to process "${itemText}". Please try again.`,
-        });
+        // Fix the toast calls to use the correct format for sonner
+        toast(`Failed to process "${itemText}". Please try again.`);
       }
     }
     
     return items;
   } catch (error) {
     console.error("Error processing shopping list:", error);
-    // Fix the toast calls
-    toast({
-      description: "Failed to process shopping list. Please try again.",
-    });
+    // Fix the toast calls to use the correct format for sonner
+    toast("Failed to process shopping list. Please try again.");
     return items;
   }
 };

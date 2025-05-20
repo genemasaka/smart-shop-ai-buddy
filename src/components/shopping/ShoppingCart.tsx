@@ -1,5 +1,4 @@
 
-// src/components/shopping/ShoppingCart.tsx
 import { useState } from "react";
 import { ShoppingListItem, Product } from "@/services/productService";
 import { Button } from "@/components/ui/button";
