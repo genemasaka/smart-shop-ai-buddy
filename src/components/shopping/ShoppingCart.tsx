@@ -1,29 +1,42 @@
+
 // src/components/shopping/ShoppingCart.tsx
 import { useState } from "react";
-import { ShoppingListItem } from "@/services/productService";
+import { ShoppingListItem, Product } from "@/services/productService";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { checkoutCart } from "@/services/productService";
 
 interface ShoppingCartProps {
   items: ShoppingListItem[];
-  onCheckoutComplete: () => void;
+  onUpdateQuantity?: (id: string, quantity: number) => void;
+  onSelectAlternative?: (id: string, product: Product) => void;
+  onReset?: () => void;
+  onCheckoutComplete?: () => void;
 }
 
-export function ShoppingCart({ items, onCheckoutComplete }: ShoppingCartProps) {
+export function ShoppingCart({ 
+  items, 
+  onUpdateQuantity, 
+  onSelectAlternative, 
+  onReset, 
+  onCheckoutComplete 
+}: ShoppingCartProps) {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { toast } = useToast();
 
   const handleCheckout = async (store: "Walmart" | "Instacart") => {
     setIsCheckingOut(true);
     try {
-      // Updated to send just one argument as expected by the function
       await checkoutCart(items);
       toast({
         title: `Checkout complete with ${store}`,
         description: "Your order has been placed successfully!",
       });
-      onCheckoutComplete();
+      if (onCheckoutComplete) {
+        onCheckoutComplete();
+      } else if (onReset) {
+        onReset(); // Use onReset as fallback if onCheckoutComplete is not provided
+      }
     } catch (error) {
       console.error("Checkout error:", error);
       toast({

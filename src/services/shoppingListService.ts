@@ -1,5 +1,5 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import { v4 as uuidv4 } from "uuid";
 import { ShoppingListItem, Product, ProductCategory } from "@/services/productService";
 
 export type ShoppingList = {
@@ -47,32 +47,42 @@ export const createShoppingList = async (userId: string, name = "Shopping List")
 };
 
 export const saveShoppingListItems = async (listId: string, items: ShoppingListItem[]) => {
-  // Format items for Supabase
-  const formattedItems = items.map(item => ({
-    id: item.id,
-    list_id: listId,
-    text: item.text,
-    category: item.category,
-    product_id: item.product?.id,
-    product_name: item.product?.name,
-    product_price: item.product?.price,
-    product_image: item.product?.image,
-    product_store: item.product?.store,
-    quantity: item.quantity,
-  }));
-
-  const { error } = await supabase
-    .from('shopping_list_items')
-    .upsert(formattedItems, {
-      onConflict: 'id'
+  try {
+    // Format items for Supabase, ensuring IDs are valid UUIDs
+    const formattedItems = items.map(item => {
+      // Check if the item ID is a valid UUID or needs to be replaced
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id);
+      
+      return {
+        id: isValidUuid ? item.id : crypto.randomUUID(),
+        list_id: listId,
+        text: item.text,
+        category: item.category,
+        product_id: item.product?.id,
+        product_name: item.product?.name,
+        product_price: item.product?.price,
+        product_image: item.product?.image,
+        product_store: item.product?.store,
+        quantity: item.quantity,
+      };
     });
 
-  if (error) {
-    console.error("Error saving shopping list items:", error);
+    const { error } = await supabase
+      .from('shopping_list_items')
+      .upsert(formattedItems, {
+        onConflict: 'id'
+      });
+
+    if (error) {
+      console.error("Error saving shopping list items:", error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error in saveShoppingListItems:", error);
     throw error;
   }
-  
-  return true;
 };
 
 export const fetchShoppingListItems = async (listId: string): Promise<ShoppingListItem[]> => {

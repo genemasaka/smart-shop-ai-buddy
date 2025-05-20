@@ -350,7 +350,8 @@ export const processShoppingList = async (
   
   try {
     for (const itemText of itemTexts) {
-      const itemId = `item_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      // Generate a proper UUID instead of a string ID
+      const itemId = crypto.randomUUID();
       
       // Create initial item
       const newItem: ShoppingListItem = {
@@ -396,9 +397,8 @@ export const processShoppingList = async (
           callback(items[index]);
         }
         
-        // Fixed: No dynamic imports
+        // Fix the toast calls
         toast({
-          title: "Error",
           description: `Failed to process "${itemText}". Please try again.`,
         });
       }
@@ -407,9 +407,8 @@ export const processShoppingList = async (
     return items;
   } catch (error) {
     console.error("Error processing shopping list:", error);
-    // Fixed: No dynamic imports
+    // Fix the toast calls
     toast({
-      title: "Error",
       description: "Failed to process shopping list. Please try again.",
     });
     return items;
