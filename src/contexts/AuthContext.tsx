@@ -1,19 +1,21 @@
 
 import { createContext, useState, useContext, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import type { User } from "@supabase/supabase-js";
 
-interface User {
+interface AuthUser {
   id: string;
   email: string;
   name: string;
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -27,49 +29,91 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Check if user is already logged in on mount
+  // Handle auth state changes
   useEffect(() => {
-    const storedUser = localStorage.getItem("shopsmartai_user");
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Failed to parse stored user:", error);
-        localStorage.removeItem("shopsmartai_user");
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session?.user) {
+          // Transform Supabase user to our app's user format
+          const authUser: AuthUser = {
+            id: session.user.id,
+            email: session.user.email || "",
+            name: session.user.user_metadata.name || session.user.email?.split('@')[0] || ""
+          };
+          setUser(authUser);
+          
+          // Store user in localStorage for persistence
+          localStorage.setItem("shopsmartai_user", JSON.stringify(authUser));
+        } else {
+          setUser(null);
+          localStorage.removeItem("shopsmartai_user");
+        }
       }
-    }
-    setIsLoading(false);
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        // Transform Supabase user to our app's user format
+        const authUser: AuthUser = {
+          id: session.user.id,
+          email: session.user.email || "",
+          name: session.user.user_metadata.name || session.user.email?.split('@')[0] || ""
+        };
+        setUser(authUser);
+        
+        // Store user in localStorage for persistence
+        localStorage.setItem("shopsmartai_user", JSON.stringify(authUser));
+      } else {
+        // Check if we have a stored user when there's no session
+        const storedUser = localStorage.getItem("shopsmartai_user");
+        if (storedUser) {
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch (error) {
+            console.error("Failed to parse stored user:", error);
+            localStorage.removeItem("shopsmartai_user");
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+      }
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // In a real app, these functions would call your backend API
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, any login succeeds
-      const mockUser = {
-        id: "user_" + Math.random().toString(36).substring(2, 9),
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        name: email.split('@')[0] // Use part of email as name
-      };
+        password
+      });
       
-      localStorage.setItem("shopsmartai_user", JSON.stringify(mockUser));
-      setUser(mockUser);
+      if (error) {
+        throw error;
+      }
+      
       toast({
         title: "Login successful",
-        description: `Welcome back, ${mockUser.name}!`,
+        description: `Welcome back${data.user?.user_metadata.name ? ', ' + data.user.user_metadata.name : ''}!`,
       });
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error("Login error:", error);
       toast({
         title: "Login failed",
-        description: "Please check your credentials and try again.",
+        description: error?.message || "Please check your credentials and try again.",
         variant: "destructive",
       });
       throw error;
@@ -81,27 +125,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signup = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, any signup succeeds
-      const mockUser = {
-        id: "user_" + Math.random().toString(36).substring(2, 9),
+      const { data, error } = await supabase.auth.signUp({
         email,
-        name
-      };
+        password,
+        options: {
+          data: {
+            name,
+          },
+        },
+      });
       
-      localStorage.setItem("shopsmartai_user", JSON.stringify(mockUser));
-      setUser(mockUser);
+      if (error) {
+        throw error;
+      }
+      
       toast({
         title: "Account created",
         description: `Welcome to ShopSmartAI, ${name}!`,
       });
-    } catch (error) {
+      
+      // Note: Depending on Supabase settings, the user might need to confirm email
+      if (data?.user && !data.session) {
+        toast({
+          title: "Email verification required",
+          description: "Please check your email to verify your account before logging in.",
+        });
+      }
+      
+    } catch (error: any) {
       console.error("Signup error:", error);
       toast({
         title: "Signup failed",
-        description: "Please try again with a different email.",
+        description: error?.message || "Please try again with a different email.",
         variant: "destructive",
       });
       throw error;
@@ -110,13 +165,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("shopsmartai_user");
-    setUser(null);
-    toast({
-      title: "Logged out",
-      description: "You've been successfully logged out.",
-    });
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      
+      // Clear local storage
+      localStorage.removeItem("shopsmartai_user");
+      setUser(null);
+      
+      toast({
+        title: "Logged out",
+        description: "You've been successfully logged out.",
+      });
+    } catch (error: any) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: error?.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

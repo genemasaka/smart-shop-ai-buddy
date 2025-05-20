@@ -11,34 +11,39 @@ export type ShoppingList = {
 };
 
 export const createShoppingList = async (userId: string, name = "Shopping List") => {
-  // Create the shopping list without using select in the same query
-  const { data, error } = await supabase
-    .from('shopping_lists')
-    .insert({
-      user_id: userId,
-      name
-    });
+  try {
+    // Create the shopping list - fixed to not use select in the insert operation
+    const { data, error } = await supabase
+      .from('shopping_lists')
+      .insert({
+        user_id: userId,
+        name
+      });
 
-  if (error) {
-    console.error("Error creating shopping list:", error);
+    if (error) {
+      console.error("Error creating shopping list:", error);
+      throw error;
+    }
+
+    // Fetch the created record in a separate query
+    const { data: createdList, error: fetchError } = await supabase
+      .from('shopping_lists')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (fetchError) {
+      console.error("Error fetching created shopping list:", fetchError);
+      throw fetchError;
+    }
+
+    return createdList;
+  } catch (error) {
+    console.error("Error in createShoppingList:", error);
     throw error;
   }
-
-  // Fetch the created record in a separate query
-  const { data: createdList, error: fetchError } = await supabase
-    .from('shopping_lists')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
-
-  if (fetchError) {
-    console.error("Error fetching created shopping list:", fetchError);
-    throw fetchError;
-  }
-
-  return createdList;
 };
 
 export const saveShoppingListItems = async (listId: string, items: ShoppingListItem[]) => {

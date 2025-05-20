@@ -1,278 +1,338 @@
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
-export type ProductCategory =
-  | "Dairy & Alternatives"
-  | "Fruits"
-  | "Vegetables"
-  | "Meat & Seafood"
-  | "Bakery & Grains"
-  | "Snacks"
-  | "Beverages"
-  | "Condiments & Spices"
-  | "Frozen Foods"
-  | "Pantry Staples"
-  | "Personal Care"
-  | "Household"
-  | "Baby & Child Care"
-  | "Pet Care"
-  | "Health & Wellness"
-  | "International Cuisine"
-  | "Prepared Foods"
-  | "Other"
+// Product categories
+export type ProductCategory = 
+  | "Dairy" 
+  | "Produce" 
+  | "Cleaning Supplies" 
+  | "Pantry" 
+  | "Beverages" 
+  | "Health and Beauty" 
+  | "Household" 
+  | "Electronics"
   | "Uncategorized";
 
+// Product interface
 export interface Product {
   id: string;
   name: string;
+  description: string;
   price: number;
   image: string;
+  category: ProductCategory;
   store: "Walmart" | "Instacart";
-	category: ProductCategory;
-  description: string;
   inStock: boolean;
 }
 
+// Shopping list item with user input and matched product
 export interface ShoppingListItem {
   id: string;
   text: string;
   category: ProductCategory;
-  quantity: number;
   product?: Product;
+  quantity: number;
   isProcessing: boolean;
 }
 
+// Mock product database
 const mockProducts: Product[] = [
   {
-    id: "milk_walmart",
-    name: "Great Value Whole Milk, 1 Gallon",
+    id: "1",
+    name: "Milk",
+    description: "1 Gallon of Milk",
     price: 3.50,
-    image: "https://i5.walmartimages.com/asr/e4c4ca97-3714-446f-9c65-a99445c926f0.c3c39164a94938a85443c592bca90959.jpeg?odnHeight=2000&odnWidth=2000&odnBg=ffffff",
+    image: "/images/products/milk.jpg",
+    category: "Dairy",
     store: "Walmart",
-		category: "Dairy & Alternatives",
-    description: "One gallon of Great Value whole milk.",
     inStock: true,
   },
   {
-    id: "eggs_walmart",
-    name: "Great Value Large Eggs, 12 Count",
-    price: 2.00,
-    image: "https://i5.walmartimages.com/asr/5164c824-9898-4599-b2c7-a5585a497cae.3b57ed4539d75f99258647afc9378219.jpeg?odnHeight=2000&odnWidth=2000&odnBg=ffffff",
+    id: "2",
+    name: "Eggs",
+    description: "1 Dozen Eggs",
+    price: 2.75,
+    image: "/images/products/eggs.jpg",
+    category: "Dairy",
     store: "Walmart",
-		category: "Dairy & Alternatives",
-    description: "A dozen large eggs from Great Value.",
     inStock: true,
   },
   {
-    id: "butter_walmart",
-    name: "Great Value Salted Butter, 1 lb",
-    price: 4.00,
-    image: "https://i5.walmartimages.com/asr/2534a573-4558-4441-9553-53371188a976.9e245a159a42cfcc29a235a1b3a9b4a5.jpeg?odnHeight=2000&odnWidth=2000&odnBg=ffffff",
+    id: "3",
+    name: "Bread",
+    description: "Loaf of White Bread",
+    price: 2.20,
+    image: "/images/products/bread.jpg",
+    category: "Pantry",
     store: "Walmart",
-		category: "Dairy & Alternatives",
-    description: "One pound of salted butter from Great Value.",
     inStock: true,
   },
   {
-    id: "milk_instacart",
-    name: "Horizon Organic Whole Milk, 0.5 Gallon",
-    price: 4.99,
-    image: "https://d2d8wwwkmhfcva.cloudfront.net/800x/filters:fill(FFF,true):format(jpg)/d2lniltooz52yy.cloudfront.net/item_detail/picture18/bb9614a819ca4419b352691a76538c4a-1595873148.jpg",
-    store: "Instacart",
-		category: "Dairy & Alternatives",
-    description: "Half gallon of Horizon Organic whole milk.",
-    inStock: true,
-  },
-  {
-    id: "eggs_instacart",
-    name: "Pete and Gerry's Organic Eggs, 12 Count",
-    price: 5.49,
-    image: "https://d2d8wwwkmhfcva.cloudfront.net/800x/filters:fill(FFF,true):format(jpg)/d2lniltooz52yy.cloudfront.net/item_detail/picture18/c7e39a59194f4d92b09199b99a3efc61-1628186443.jpg",
-    store: "Instacart",
-		category: "Dairy & Alternatives",
-    description: "A dozen organic eggs from Pete and Gerry's.",
-    inStock: true,
-  },
-  {
-    id: "butter_instacart",
-    name: "Organic Valley Salted Butter, 1 lb",
-    price: 7.99,
-    image: "https://d2d8wwwkmhfcva.cloudfront.net/800x/filters:fill(FFF,true):format(jpg)/d2lniltooz52yy.cloudfront.net/item_detail/picture18/3c3e9c190afa4943959264299459a73f-1620843972.jpg",
-    store: "Instacart",
-		category: "Dairy & Alternatives",
-    description: "One pound of salted butter from Organic Valley.",
-    inStock: true,
-  },
-  {
-    id: "apple_walmart",
-    name: "Granny Smith Apples",
-    price: 0.76,
-    image: "https://i5.walmartimages.com/asr/f55c1c59-d044-452c-8316-4394509c5349.4ca39968f54065549407dab835434a64.jpeg?odnHeight=2000&odnWidth=2000&odnBg=ffffff",
+    id: "4",
+    name: "Apples",
+    description: "1 lb of Apples",
+    price: 1.99,
+    image: "/images/products/apples.jpg",
+    category: "Produce",
     store: "Walmart",
-		category: "Fruits",
-    description: "Fresh Granny Smith Apples.",
     inStock: true,
   },
   {
-    id: "banana_walmart",
-    name: "Fresh Cavendish Bananas",
-    price: 0.50,
-    image: "https://i5.walmartimages.com/asr/4a98b241-ebca-4969-a191-3a55d599bca9.9c9968124e457dd4418f688a5dbf0c49.jpeg?odnHeight=2000&odnWidth=2000&odnBg=ffffff",
-    store: "Walmart",
-		category: "Fruits",
-    description: "Fresh Cavendish Bananas.",
-    inStock: true,
-  },
-  {
-    id: "bread_walmart",
-    name: "Wonder Bread Classic White Bread, 20 oz Loaf",
-    price: 2.28,
-    image: "https://i5.walmartimages.com/asr/f394c1c1-7539-449c-9e23-c9c09c84d429.393335c7e447949866a7549264c7c587.jpeg?odnHeight=2000&odnWidth=2000&odnBg=ffffff",
-    store: "Walmart",
-		category: "Bakery & Grains",
-    description: "Classic white bread loaf.",
-    inStock: true,
-  },
-  {
-    id: "apple_instacart",
-    name: "Organic Fuji Apple",
-    price: 1.29,
-    image: "https://d2d8wwwkmhfcva.cloudfront.net/800x/filters:fill(FFF,true):format(jpg)/d2lniltooz52yy.cloudfront.net/item_detail/picture18/092265a8afca459689a763c5942c7150-1620844026.jpg",
-    store: "Instacart",
-		category: "Fruits",
-    description: "Organic Fuji Apple.",
-    inStock: true,
-  },
-  {
-    id: "banana_instacart",
-    name: "Organic Banana",
-    price: 0.79,
-    image: "https://d2d8wwwkmhfcva.cloudfront.net/800x/filters:fill(FFF,true):format(jpg)/d2lniltooz52yy.cloudfront.net/item_detail/picture18/264534ea299c4d99bc94599c98f6fa08-1633719833.jpg",
-    store: "Instacart",
-		category: "Fruits",
-    description: "Organic Banana.",
-    inStock: true,
-  },
-  {
-    id: "bread_instacart",
-    name: "Dave's Killer Bread Organic Good Seed",
-    price: 5.99,
-    image: "https://d2d8wwwkmhfcva.cloudfront.net/800x/filters:fill(FFF,true):format(jpg)/d2lniltooz52yy.cloudfront.net/item_detail/picture18/597f32b3ca5f401aa878ffc185e39199-1620843982.jpg",
-    store: "Instacart",
-		category: "Bakery & Grains",
-    description: "Organic bread with good seeds.",
-    inStock: true,
-  },
-  {
-    id: "coffee_walmart",
-    name: "Folgers Classic Roast Ground Coffee, 30.5 oz",
-    price: 8.48,
-    image: "https://i5.walmartimages.com/asr/819eb954-7b71-485f-8e94-153d8c81a334.57a993eadb29d9941f599a74630972f6.jpeg?odnHeight=2000&odnWidth=2000&odnBg=ffffff",
-    store: "Walmart",
-		category: "Beverages",
-    description: "Classic roast ground coffee.",
-    inStock: true,
-  },
-  {
-    id: "cereal_walmart",
-    name: "Kellogg's Frosted Flakes Breakfast Cereal, 24 oz",
-    price: 3.64,
-    image: "https://i5.walmartimages.com/asr/9f69c399-3483-4693-a4f1-54847695355f.9356c941ca5cae86abb83415549988a4.jpeg?odnHeight=2000&odnWidth=2000&odnBg=ffffff",
-    store: "Walmart",
-		category: "Pantry Staples",
-    description: "Frosted Flakes breakfast cereal.",
-    inStock: true,
-  },
-  {
-    id: "orange_juice_walmart",
-    name: "Great Value 100% Orange Juice, 52 fl oz",
+    id: "5",
+    name: "Tomatoes",
+    description: "1 lb of Tomatoes",
     price: 2.50,
-    image: "https://i5.walmartimages.com/asr/bca5e314-9a59-4f49-8662-10e5c6239294.034aefc4c7534459799ca9a3c6402367.jpeg?odnHeight=2000&odnWidth=2000&odnBg=ffffff",
+    image: "/images/products/tomatoes.jpg",
+    category: "Produce",
     store: "Walmart",
-		category: "Beverages",
-    description: "100% orange juice.",
     inStock: true,
   },
   {
-    id: "coffee_instacart",
-    name: "Starbucks Pike Place Roast Ground Coffee",
-    price: 11.99,
-    image: "https://d2d8wwwkmhfcva.cloudfront.net/800x/filters:fill(FFF,true):format(jpg)/d2lniltooz52yy.cloudfront.net/item_detail/picture18/00011120010079-1575567844.jpg",
-    store: "Instacart",
-		category: "Beverages",
-    description: "Pike Place Roast Ground Coffee.",
+    id: "6",
+    name: "Chicken Breast",
+    description: "1 lb of Chicken Breast",
+    price: 5.99,
+    image: "/images/products/chicken.jpg",
+    category: "Pantry",
+    store: "Walmart",
     inStock: true,
   },
   {
-    id: "cereal_instacart",
-    name: "General Mills Cheerios Cereal",
-    price: 4.29,
-    image: "https://d2d8wwwkmhfcva.cloudfront.net/800x/filters:fill(FFF,true):format(jpg)/d2lniltooz52yy.cloudfront.net/item_detail/picture18/00016000490708-1620844000.jpg",
-    store: "Instacart",
-		category: "Pantry Staples",
-    description: "Cheerios Cereal.",
+    id: "7",
+    name: "Pasta",
+    description: "Box of Spaghetti",
+    price: 1.20,
+    image: "/images/products/pasta.jpg",
+    category: "Pantry",
+    store: "Walmart",
     inStock: true,
   },
   {
-    id: "orange_juice_instacart",
-    name: "Simply Orange Juice",
-    price: 3.99,
-    image: "https://d2d8wwwkmhfcva.cloudfront.net/800x/filters:fill(FFF,true):format(jpg)/d2lniltooz52yy.cloudfront.net/item_detail/picture18/00005200003100-1620843974.jpg",
-    store: "Instacart",
-		category: "Beverages",
-    description: "Simply Orange Juice.",
+    id: "8",
+    name: "Shampoo",
+    description: "Bottle of Shampoo",
+    price: 4.00,
+    image: "/images/products/shampoo.jpg",
+    category: "Health and Beauty",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "9",
+    name: "Conditioner",
+    description: "Bottle of Conditioner",
+    price: 4.20,
+    image: "/images/products/conditioner.jpg",
+    category: "Health and Beauty",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "10",
+    name: "Toothpaste",
+    description: "Tube of Toothpaste",
+    price: 2.80,
+    image: "/images/products/toothpaste.jpg",
+    category: "Health and Beauty",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "11",
+    name: "Paper Towels",
+    description: "Roll of Paper Towels",
+    price: 2.00,
+    image: "/images/products/papertowels.jpg",
+    category: "Household",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "12",
+    name: "Toilet Paper",
+    description: "Pack of Toilet Paper",
+    price: 6.50,
+    image: "/images/products/toiletpaper.jpg",
+    category: "Household",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "13",
+    name: "Laundry Detergent",
+    description: "Bottle of Laundry Detergent",
+    price: 7.00,
+    image: "/images/products/laundrydetergent.jpg",
+    category: "Household",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "14",
+    name: "Dish Soap",
+    description: "Bottle of Dish Soap",
+    price: 3.20,
+    image: "/images/products/dishsoap.jpg",
+    category: "Household",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "15",
+    name: "Trash Bags",
+    description: "Box of Trash Bags",
+    price: 8.00,
+    image: "/images/products/trashbags.jpg",
+    category: "Household",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "16",
+    name: "Coffee",
+    description: "Can of Coffee",
+    price: 6.00,
+    image: "/images/products/coffee.jpg",
+    category: "Beverages",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "17",
+    name: "Tea",
+    description: "Box of Tea Bags",
+    price: 3.50,
+    image: "/images/products/tea.jpg",
+    category: "Beverages",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "18",
+    name: "Juice",
+    description: "Bottle of Juice",
+    price: 4.00,
+    image: "/images/products/juice.jpg",
+    category: "Beverages",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "19",
+    name: "Soda",
+    description: "Pack of Soda Cans",
+    price: 5.50,
+    image: "/images/products/soda.jpg",
+    category: "Beverages",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "20",
+    name: "Water",
+    description: "Pack of Water Bottles",
+    price: 4.50,
+    image: "/images/products/water.jpg",
+    category: "Beverages",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "21",
+    name: "Laptop",
+    description: "New Laptop Computer",
+    price: 1200.00,
+    image: "/images/products/laptop.jpg",
+    category: "Electronics",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "22",
+    name: "Television",
+    description: "4K Ultra HD Television",
+    price: 800.00,
+    image: "/images/products/television.jpg",
+    category: "Electronics",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "23",
+    name: "Smartphone",
+    description: "Latest Smartphone Model",
+    price: 900.00,
+    image: "/images/products/smartphone.jpg",
+    category: "Electronics",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "24",
+    name: "Headphones",
+    description: "Wireless Noise-Cancelling Headphones",
+    price: 250.00,
+    image: "/images/products/headphones.jpg",
+    category: "Electronics",
+    store: "Walmart",
+    inStock: true,
+  },
+  {
+    id: "25",
+    name: "Tablet",
+    description: "High-Resolution Tablet Computer",
+    price: 400.00,
+    image: "/images/products/tablet.jpg",
+    category: "Electronics",
+    store: "Walmart",
     inStock: true,
   },
 ];
 
-const categorizeShoppingItem = async (itemText: string): Promise<ProductCategory> => {
-  // Mock implementation: Categorize based on keywords
-  const lowerCaseItemText = itemText.toLowerCase();
+// Mock AI categorization function
+export const categorizeShoppingItem = async (text: string): Promise<ProductCategory> => {
+  text = text.toLowerCase();
 
-  if (lowerCaseItemText.includes("milk") || lowerCaseItemText.includes("cheese") || lowerCaseItemText.includes("yogurt") || lowerCaseItemText.includes("butter") || lowerCaseItemText.includes("cream")) {
-    return "Dairy & Alternatives";
-  } else if (lowerCaseItemText.includes("apple") || lowerCaseItemText.includes("banana") || lowerCaseItemText.includes("orange") || lowerCaseItemText.includes("berries") || lowerCaseItemText.includes("fruit")) {
-    return "Fruits";
-  } else if (lowerCaseItemText.includes("carrot") || lowerCaseItemText.includes("broccoli") || lowerCaseItemText.includes("spinach") || lowerCaseItemText.includes("tomato") || lowerCaseItemText.includes("vegetable")) {
-    return "Vegetables";
-  } else if (lowerCaseItemText.includes("chicken") || lowerCaseItemText.includes("beef") || lowerCaseItemText.includes("fish") || lowerCaseItemText.includes("salmon") || lowerCaseItemText.includes("meat")) {
-    return "Meat & Seafood";
-  } else if (lowerCaseItemText.includes("bread") || lowerCaseItemText.includes("cereal") || lowerCaseItemText.includes("pasta") || lowerCaseItemText.includes("rice") || lowerCaseItemText.includes("grain")) {
-    return "Bakery & Grains";
-  } else if (lowerCaseItemText.includes("chips") || lowerCaseItemText.includes("chocolate") || lowerCaseItemText.includes("candy") || lowerCaseItemText.includes("cookies") || lowerCaseItemText.includes("snack")) {
-    return "Snacks";
-  } else if (lowerCaseItemText.includes("coffee") || lowerCaseItemText.includes("tea") || lowerCaseItemText.includes("juice") || lowerCaseItemText.includes("soda") || lowerCaseItemText.includes("beverage")) {
+  if (text.includes("milk") || text.includes("cheese") || text.includes("yogurt") || text.includes("butter") || text.includes("cream")) {
+    return "Dairy";
+  } else if (text.includes("apple") || text.includes("banana") || text.includes("orange") || text.includes("tomato") || text.includes("potato") || text.includes("onion") || text.includes("cucumber")) {
+    return "Produce";
+  } else if (text.includes("detergent") || text.includes("soap") || text.includes("cleaner") || text.includes("bleach") || text.includes("wipes")) {
+    return "Cleaning Supplies";
+  } else if (text.includes("pasta") || text.includes("rice") || text.includes("cereal") || text.includes("flour") || text.includes("sugar") || text.includes("bread")) {
+    return "Pantry";
+  } else if (text.includes("coffee") || text.includes("tea") || text.includes("juice") || text.includes("soda") || text.includes("water")) {
     return "Beverages";
-  } else if (lowerCaseItemText.includes("salt") || lowerCaseItemText.includes("pepper") || lowerCaseItemText.includes("sauce") || lowerCaseItemText.includes("spice")) {
-    return "Condiments & Spices";
-  } else if (lowerCaseItemText.includes("ice cream") || lowerCaseItemText.includes("pizza") || lowerCaseItemText.includes("peas")) {
-    return "Frozen Foods";
-  } else if (lowerCaseItemText.includes("flour") || lowerCaseItemText.includes("sugar") || lowerCaseItemText.includes("oil")) {
-    return "Pantry Staples";
-  } else if (lowerCaseItemText.includes("shampoo") || lowerCaseItemText.includes("soap") || lowerCaseItemText.includes("toothpaste")) {
-    return "Personal Care";
-  } else if (lowerCaseItemText.includes("cleaner") || lowerCaseItemText.includes("detergent") || lowerCaseItemText.includes("paper towels")) {
+  } else if (text.includes("shampoo") || text.includes("conditioner") || text.includes("toothpaste") || text.includes("lotion") || text.includes("sunscreen")) {
+    return "Health and Beauty";
+  } else if (text.includes("towels") || text.includes("paper") || text.includes("toilet paper") || text.includes("trash bags") || text.includes("dish soap")) {
     return "Household";
-  } else if (lowerCaseItemText.includes("diapers") || lowerCaseItemText.includes("formula") || lowerCaseItemText.includes("wipes")) {
-    return "Baby & Child Care";
-  } else if (lowerCaseItemText.includes("dog food") || lowerCaseItemText.includes("cat food") || lowerCaseItemText.includes("pet toy")) {
-    return "Pet Care";
-  } else if (lowerCaseItemText.includes("vitamins") || lowerCaseItemText.includes("supplements")) {
-    return "Health & Wellness";
+  } else if (text.includes("laptop") || text.includes("television") || text.includes("smartphone") || text.includes("headphones") || text.includes("tablet")) {
+    return "Electronics";
+  } else {
+    return "Uncategorized";
   }
-
-  return "Uncategorized";
 };
 
-const findMatchingProducts = async (itemText: string, category: ProductCategory): Promise<Product[]> => {
-  // Mock implementation: Find products based on keywords and category
-  const lowerCaseItemText = itemText.toLowerCase();
+// Find matching products based on text and category
+export const findMatchingProducts = async (
+  text: string, 
+  category: ProductCategory,
+  preferredStore?: string
+): Promise<Product[]> => {
+  text = text.toLowerCase();
   
-  const matchingProducts = mockProducts.filter(product => {
-    const lowerCaseProductName = product.name.toLowerCase();
-    return lowerCaseProductName.includes(lowerCaseItemText) && product.category === category;
+  let matches = mockProducts.filter(product => {
+    const nameMatches = product.name.toLowerCase().includes(text);
+    const categoryMatches = product.category === category;
+    
+    return nameMatches && categoryMatches;
   });
+
+  if (preferredStore) {
+    matches = matches.filter(product => product.store.toLowerCase() === preferredStore.toLowerCase());
+  }
   
-  return matchingProducts;
+  return matches;
 };
 
 // Process shopping list text into individual items
@@ -336,11 +396,10 @@ export const processShoppingList = async (
           callback(items[index]);
         }
         
-        // Toast error here but use imported toast
+        // Fixed: No dynamic imports
         toast({
           title: "Error",
           description: `Failed to process "${itemText}". Please try again.`,
-          variant: "destructive"
         });
       }
     }
@@ -348,21 +407,21 @@ export const processShoppingList = async (
     return items;
   } catch (error) {
     console.error("Error processing shopping list:", error);
-    // Toast error here but use imported toast
+    // Fixed: No dynamic imports
     toast({
       title: "Error",
       description: "Failed to process shopping list. Please try again.",
-      variant: "destructive"
     });
     return items;
   }
 };
 
-export const checkoutCart = async (items: ShoppingListItem[]) => {
-  // Mock implementation: Just log the items
-  console.log("Checking out cart with items:", items);
+// Function to simulate checkout - updated to match how it's called
+export const checkoutCart = async (items: ShoppingListItem[]): Promise<boolean> => {
+  // Simulate checkout process delay
+  await new Promise(resolve => setTimeout(resolve, 2000));
   
-  // You would typically integrate with a payment gateway here
-  
-  return { success: true };
+  // In a real app, this would redirect to the store's API
+  // For demo, we'll just return true
+  return true;
 };
