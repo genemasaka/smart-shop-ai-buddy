@@ -6,13 +6,115 @@ import { ShoppingListItem, processShoppingList, Product } from "@/services/produ
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { createShoppingList, saveShoppingListItems } from "@/services/shoppingListService";
+import { useCategoryQuery, mapToProductCategory } from "@/hooks/useCategoryQuery";
 
 const ShoppingList = () => {
   const [items, setItems] = useState<ShoppingListItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentListId, setCurrentListId] = useState<string | null>(null);
+  const [currentProcessingItem, setCurrentProcessingItem] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Use our new hook to get AI categorization
+  const { data: categoryData } = useCategoryQuery(currentProcessingItem, {
+    enabled: !!currentProcessingItem,
+    onSuccess: (data) => {
+      if (currentProcessingItem) {
+        processItemWithCategory(currentProcessingItem, mapToProductCategory(data.category));
+        setCurrentProcessingItem(null); // Reset for next item
+      }
+    },
+    onError: () => {
+      // If categorization fails, process with default categorization
+      if (currentProcessingItem) {
+        processItemWithDefaultCategorization(currentProcessingItem);
+        setCurrentProcessingItem(null);
+      }
+    }
+  });
+
+  const processItemWithCategory = async (itemText: string, category: string) => {
+    try {
+      // Create a new item with AI-predicted category
+      const newItem: ShoppingListItem = {
+        id: crypto.randomUUID(),
+        text: itemText,
+        category: category,
+        quantity: 1,
+        isProcessing: true
+      };
+      
+      // Add to items list
+      setItems(prevItems => [...prevItems, newItem]);
+      
+      // Find matching products with the AI-predicted category
+      const matchingProducts = await findMatchingProducts(itemText, category);
+      
+      // Update the item with product
+      const updatedItem: ShoppingListItem = {
+        ...newItem,
+        product: matchingProducts.length > 0 ? matchingProducts[0] : undefined,
+        isProcessing: false
+      };
+      
+      // Replace the item in the list
+      setItems(prevItems => 
+        prevItems.map(item => item.id === newItem.id ? updatedItem : item)
+      );
+      
+    } catch (error) {
+      console.error(`Error processing item with AI category "${itemText}":`, error);
+      processItemWithDefaultCategorization(itemText);
+    }
+  };
+
+  const processItemWithDefaultCategorization = (itemText: string) => {
+    console.log("Using default categorization for:", itemText);
+    // Process using the existing categorization logic instead
+    const processItem = async () => {
+      const initialItem: ShoppingListItem = {
+        id: crypto.randomUUID(),
+        text: itemText,
+        category: "Uncategorized",
+        quantity: 1,
+        isProcessing: true
+      };
+      
+      setItems(prevItems => [...prevItems, initialItem]);
+      
+      try {
+        const category = await categorizeShoppingItem(itemText);
+        const matchingProducts = await findMatchingProducts(itemText, category);
+        
+        const updatedItem: ShoppingListItem = {
+          ...initialItem,
+          category,
+          product: matchingProducts.length > 0 ? matchingProducts[0] : undefined,
+          isProcessing: false
+        };
+        
+        setItems(prevItems => 
+          prevItems.map(item => item.id === initialItem.id ? updatedItem : item)
+        );
+      } catch (error) {
+        console.error(`Error in default categorization for "${itemText}":`, error);
+        
+        setItems(prevItems => 
+          prevItems.map(item => 
+            item.id === initialItem.id 
+              ? { ...item, isProcessing: false } 
+              : item
+          )
+        );
+      }
+    };
+    
+    processItem();
+  };
+
+  // Import functions from productService to use here
+  const { categorizeShoppingItem, findMatchingProducts } = require("@/services/productService");
 
   const handleSubmitList = async (listText: string) => {
     if (!user) {
@@ -42,26 +144,23 @@ const ShoppingList = () => {
       console.log("Created shopping list:", list);
       setCurrentListId(list.id);
       
-      // Process each item and update the UI as they complete
-      const processedItems = await processShoppingList(listText, (updatedItem) => {
-        setItems(currentItems => {
-          const itemIndex = currentItems.findIndex(item => item.id === updatedItem.id);
-          
-          if (itemIndex >= 0) {
-            // Update existing item
-            const newItems = [...currentItems];
-            newItems[itemIndex] = updatedItem;
-            return newItems;
-          } else {
-            // Add new item
-            return [...currentItems, updatedItem];
-          }
-        });
-      });
+      // Split by commas or new lines
+      const itemTexts = listText
+        .split(/[,\n]+/)
+        .map(item => item.trim())
+        .filter(item => item.length > 0);
+      
+      // Process each item one by one with AI categorization
+      for (const itemText of itemTexts) {
+        // Process current item with AI
+        setCurrentProcessingItem(itemText);
+        // Wait for the AI to process each item (handled by the query hook's onSuccess/onError)
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
       
       // Save all items to the database
-      if (processedItems.length > 0 && list.id) {
-        await saveShoppingListItems(list.id, processedItems);
+      if (items.length > 0 && list.id) {
+        await saveShoppingListItems(list.id, items);
         
         toast({
           title: "Shopping list processed",
@@ -83,6 +182,7 @@ const ShoppingList = () => {
       });
     } finally {
       setIsProcessing(false);
+      setCurrentProcessingItem(null);
     }
   };
 
