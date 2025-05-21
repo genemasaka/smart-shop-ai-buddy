@@ -1,5 +1,4 @@
 import { toast } from "sonner";
-import { classifyGroceryItem } from "./huggingFaceService";
 
 // Product categories
 export type ProductCategory = 
@@ -289,9 +288,29 @@ const mockProducts: Product[] = [
   },
 ];
 
-// Updated categorization function that uses Hugging Face API
+// Mock AI categorization function
 export const categorizeShoppingItem = async (text: string): Promise<ProductCategory> => {
-  return classifyGroceryItem(text);
+  text = text.toLowerCase();
+
+  if (text.includes("milk") || text.includes("cheese") || text.includes("yogurt") || text.includes("butter") || text.includes("cream")) {
+    return "Dairy";
+  } else if (text.includes("apple") || text.includes("banana") || text.includes("orange") || text.includes("tomato") || text.includes("potato") || text.includes("onion") || text.includes("cucumber")) {
+    return "Produce";
+  } else if (text.includes("detergent") || text.includes("soap") || text.includes("cleaner") || text.includes("bleach") || text.includes("wipes")) {
+    return "Cleaning Supplies";
+  } else if (text.includes("pasta") || text.includes("rice") || text.includes("cereal") || text.includes("flour") || text.includes("sugar") || text.includes("bread")) {
+    return "Pantry";
+  } else if (text.includes("coffee") || text.includes("tea") || text.includes("juice") || text.includes("soda") || text.includes("water")) {
+    return "Beverages";
+  } else if (text.includes("shampoo") || text.includes("conditioner") || text.includes("toothpaste") || text.includes("lotion") || text.includes("sunscreen")) {
+    return "Health and Beauty";
+  } else if (text.includes("towels") || text.includes("paper") || text.includes("toilet paper") || text.includes("trash bags") || text.includes("dish soap")) {
+    return "Household";
+  } else if (text.includes("laptop") || text.includes("television") || text.includes("smartphone") || text.includes("headphones") || text.includes("tablet")) {
+    return "Electronics";
+  } else {
+    return "Uncategorized";
+  }
 };
 
 // Find matching products based on text and category
