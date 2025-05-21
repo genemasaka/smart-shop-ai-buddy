@@ -31,8 +31,18 @@ serve(async (req) => {
     console.log(`Categorizing item: ${item}`);
 
     // Get the Hugging Face API token from environment variables
-    const huggingfaceToken = Deno.env.get("HUGGINGFACE_TOKEN") || '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';
+    const huggingfaceToken = Deno.env.get("HUGGINGFACE_TOKEN");
     
+    if (!huggingfaceToken) {
+      return new Response(
+        JSON.stringify({ error: "Hugging Face API token not found" }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Call the Hugging Face API
     const response = await fetch(HUGGINGFACE_API_URL, {
       method: "POST",

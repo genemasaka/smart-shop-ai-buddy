@@ -84,6 +84,9 @@ const ShoppingList = () => {
       setItems(prevItems => [...prevItems, initialItem]);
       
       try {
+        // Import functions directly instead of using require
+        const { categorizeShoppingItem, findMatchingProducts } = await import("@/services/productService");
+        
         const category = await categorizeShoppingItem(itemText);
         const matchingProducts = await findMatchingProducts(itemText, category);
         
@@ -113,8 +116,12 @@ const ShoppingList = () => {
     processItem();
   };
 
-  // Import functions from productService to use here
-  const { categorizeShoppingItem, findMatchingProducts } = require("@/services/productService");
+  // Import functions from productService separately
+  // We'll use dynamic imports instead of require
+  const findMatchingProducts = async (itemText: string, category: string) => {
+    const { findMatchingProducts } = await import("@/services/productService");
+    return findMatchingProducts(itemText, category);
+  };
 
   const handleSubmitList = async (listText: string) => {
     if (!user) {
