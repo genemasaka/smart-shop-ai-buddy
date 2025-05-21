@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Product categories
 export type ProductCategory = 
@@ -288,27 +289,35 @@ const mockProducts: Product[] = [
   },
 ];
 
-// Mock AI categorization function
+// AI categorization function using the Hugging Face API via Supabase Edge Function
 export const categorizeShoppingItem = async (text: string): Promise<ProductCategory> => {
-  text = text.toLowerCase();
-
-  if (text.includes("milk") || text.includes("cheese") || text.includes("yogurt") || text.includes("butter") || text.includes("cream")) {
-    return "Dairy";
-  } else if (text.includes("apple") || text.includes("banana") || text.includes("orange") || text.includes("tomato") || text.includes("potato") || text.includes("onion") || text.includes("cucumber")) {
-    return "Produce";
-  } else if (text.includes("detergent") || text.includes("soap") || text.includes("cleaner") || text.includes("bleach") || text.includes("wipes")) {
-    return "Cleaning Supplies";
-  } else if (text.includes("pasta") || text.includes("rice") || text.includes("cereal") || text.includes("flour") || text.includes("sugar") || text.includes("bread")) {
-    return "Pantry";
-  } else if (text.includes("coffee") || text.includes("tea") || text.includes("juice") || text.includes("soda") || text.includes("water")) {
-    return "Beverages";
-  } else if (text.includes("shampoo") || text.includes("conditioner") || text.includes("toothpaste") || text.includes("lotion") || text.includes("sunscreen")) {
-    return "Health and Beauty";
-  } else if (text.includes("towels") || text.includes("paper") || text.includes("toilet paper") || text.includes("trash bags") || text.includes("dish soap")) {
-    return "Household";
-  } else if (text.includes("laptop") || text.includes("television") || text.includes("smartphone") || text.includes("headphones") || text.includes("tablet")) {
-    return "Electronics";
-  } else {
+  try {
+    // Call the Supabase Edge Function for category prediction
+    const { data, error } = await supabase.functions.invoke("categorizeItem", {
+      body: { item: text },
+    });
+    
+    if (error) {
+      console.error("Error calling categorizeItem function:", error);
+      return "Uncategorized";
+    }
+    
+    // Map the returned category to our ProductCategory type
+    const categoryMap: Record<string, ProductCategory> = {
+      "Dairy": "Dairy",
+      "Produce": "Produce",
+      "Cleaning": "Cleaning Supplies",
+      "Pantry": "Pantry",
+      "Beverages": "Beverages", 
+      "Personal Care": "Health and Beauty",
+      "Household": "Household",
+      "Electronics": "Electronics"
+    };
+    
+    // Use the mapped category or default to "Uncategorized"
+    return categoryMap[data?.category] || "Uncategorized";
+  } catch (error) {
+    console.error("Error in categorizeShoppingItem:", error);
     return "Uncategorized";
   }
 };

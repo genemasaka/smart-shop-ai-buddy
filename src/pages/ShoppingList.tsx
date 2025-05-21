@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { ShoppingListInput } from "@/components/shopping/ShoppingListInput";
 import { ShoppingCart } from "@/components/shopping/ShoppingCart";
@@ -20,7 +21,9 @@ const ShoppingList = () => {
     enabled: !!currentProcessingItem,
     onSuccess: (data) => {
       if (currentProcessingItem) {
-        processItemWithCategory(currentProcessingItem, mapToProductCategory(data.category));
+        // Use mapToProductCategory to convert the string to ProductCategory type
+        const productCategory = mapToProductCategory(data.category);
+        processItemWithCategory(currentProcessingItem, productCategory);
         setCurrentProcessingItem(null); // Reset for next item
       }
     },
@@ -33,7 +36,7 @@ const ShoppingList = () => {
     }
   });
 
-  const processItemWithCategory = async (itemText: string, category: string) => {
+  const processItemWithCategory = async (itemText: string, category: ProductCategory) => {
     try {
       // Create a new item with AI-predicted category
       const newItem: ShoppingListItem = {
@@ -117,7 +120,7 @@ const ShoppingList = () => {
 
   // Import functions from productService separately
   // We'll use dynamic imports instead of require
-  const findMatchingProducts = async (itemText: string, category: string) => {
+  const findMatchingProducts = async (itemText: string, category: ProductCategory) => {
     const { findMatchingProducts } = await import("@/services/productService");
     return findMatchingProducts(itemText, category);
   };
