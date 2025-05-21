@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { ShoppingListInput } from "@/components/shopping/ShoppingListInput";
 import { ShoppingCart } from "@/components/shopping/ShoppingCart";

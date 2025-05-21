@@ -2,4 +2,4 @@
 project_id = "fzqmattjqrkecgphbwkj"
 
 [functions.categorizeItem]
-verify_jwt = true
+verify_jwt = false
