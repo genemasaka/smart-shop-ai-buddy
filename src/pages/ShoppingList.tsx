@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { ShoppingListInput } from "@/components/shopping/ShoppingListInput";
 import { ShoppingCart } from "@/components/shopping/ShoppingCart";
+import { ApiTokenSetup } from "@/components/shopping/ApiTokenSetup";
 import { ShoppingListItem, processShoppingList, Product } from "@/services/productService";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +12,7 @@ const ShoppingList = () => {
   const [items, setItems] = useState<ShoppingListItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentListId, setCurrentListId] = useState<string | null>(null);
+  const [showTokenSetup, setShowTokenSetup] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -139,17 +141,32 @@ const ShoppingList = () => {
         </p>
         
         <div className="space-y-8">
-          <ShoppingListInput 
-            onSubmit={handleSubmitList}
-            isProcessing={isProcessing}
-          />
-          
-          <ShoppingCart 
-            items={items}
-            onUpdateQuantity={handleUpdateQuantity}
-            onSelectAlternative={handleSelectAlternative}
-            onReset={handleReset}
-          />
+          {showTokenSetup ? (
+            <ApiTokenSetup onTokenSet={() => setShowTokenSetup(false)} />
+          ) : (
+            <>
+              <div className="flex justify-end">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowTokenSetup(true)}
+                >
+                  Configure AI
+                </Button>
+              </div>
+              <ShoppingListInput 
+                onSubmit={handleSubmitList}
+                isProcessing={isProcessing}
+              />
+              
+              <ShoppingCart 
+                items={items}
+                onUpdateQuantity={handleUpdateQuantity}
+                onSelectAlternative={handleSelectAlternative}
+                onReset={handleReset}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>
