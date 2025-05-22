@@ -37,39 +37,24 @@ serve(async (req) => {
       // Initialize Hugging Face with the token from environment variables
       const hf = new HfInference(Deno.env.get("HUGGINGFACE_TOKEN"))
       
-      // Create a proper prompt for the classification task
-      const prompt = `
-        Categorize this grocery item into one of these categories:
-        Dairy, Produce, Cleaning Supplies, Pantry, Beverages, Health and Beauty, Household, Electronics, or Uncategorized.
-        
-        Item: ${text}
-        
-        Category:
-      `
-      
-      // Call Hugging Face for classification
-      const response = await hf.textGeneration({
+      // Call Hugging Face for classification directly instead of using text generation
+      const response = await hf.textClassification({
         model: "distilbert-base-uncased-finetuned-sst-2-english",
-        inputs: prompt,
-        parameters: {
-          max_length: 32,
-          temperature: 0.1,
-        },
+        inputs: text,
       })
       
+      console.log("Hugging Face classification response:", response)
+      
       // Extract the category from the response
-      if (response && response.generated_text) {
-        // Clean up the response
-        const generatedText = response.generated_text.trim()
-        
-        // Check if the response is one of our valid categories
+      if (response && Array.isArray(response)) {
+        // Check if the response contains valid classification results
         const validCategories = ["Dairy", "Produce", "Cleaning Supplies", "Pantry", "Beverages", 
-                                "Health and Beauty", "Household", "Electronics", "Uncategorized"]
+                               "Health and Beauty", "Household", "Electronics", "Uncategorized"]
         
-        // Find a matching category in the response
-        for (const validCategory of validCategories) {
-          if (generatedText.includes(validCategory)) {
-            category = validCategory
+        // Try to find a category label in the response
+        for (const result of response) {
+          if (result.label && validCategories.includes(result.label)) {
+            category = result.label
             break
           }
         }
