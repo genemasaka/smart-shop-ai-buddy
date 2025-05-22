@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -54,15 +53,15 @@ export const categorizeShoppingItem = async (text: string): Promise<ProductCateg
   try {
     console.log("Calling categorizeItem edge function with text:", text);
     
-    // Fix: Ensure we're sending the text property correctly formatted as JSON
+    // Call the edge function to categorize the item
     const { data, error } = await supabase.functions.invoke('categorizeItem', {
-      body: { text: text }
+      body: { text }
     });
     
     if (error) {
       console.error("Error categorizing item:", error);
-      // Fallback to simple categorization if the edge function fails
-      return fallbackCategorization(text);
+      toast(`Error categorizing item: ${error.message}`);
+      return "Uncategorized";
     }
     
     console.log("Categorization response:", data);
@@ -75,34 +74,118 @@ export const categorizeShoppingItem = async (text: string): Promise<ProductCateg
     return "Uncategorized";
   } catch (error) {
     console.error("Error in categorizeShoppingItem:", error);
-    // Return a fallback category when there's an error
-    return fallbackCategorization(text);
+    toast(`Error categorizing item: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return "Uncategorized";
   }
 };
 
-// Fallback categorization function in case the edge function fails
-const fallbackCategorization = (text: string): ProductCategory => {
+// Find matching products based on text and category
+export const findMatchingProducts = async (
+  text: string, 
+  category: ProductCategory,
+  preferredStore?: string
+): Promise<Product[]> => {
   text = text.toLowerCase();
+  
+  let matches = mockProducts.filter(product => {
+    const nameMatches = product.name.toLowerCase().includes(text);
+    const categoryMatches = product.category === category;
+    
+    return nameMatches && categoryMatches;
+  });
 
-  if (text.includes("milk") || text.includes("cheese") || text.includes("yogurt") || text.includes("butter") || text.includes("cream")) {
-    return "Dairy";
-  } else if (text.includes("apple") || text.includes("banana") || text.includes("orange") || text.includes("tomato") || text.includes("potato") || text.includes("onion") || text.includes("cucumber")) {
-    return "Produce";
-  } else if (text.includes("detergent") || text.includes("soap") || text.includes("cleaner") || text.includes("bleach") || text.includes("wipes")) {
-    return "Cleaning Supplies";
-  } else if (text.includes("pasta") || text.includes("rice") || text.includes("cereal") || text.includes("flour") || text.includes("sugar") || text.includes("bread")) {
-    return "Pantry";
-  } else if (text.includes("coffee") || text.includes("tea") || text.includes("juice") || text.includes("soda") || text.includes("water")) {
-    return "Beverages";
-  } else if (text.includes("shampoo") || text.includes("conditioner") || text.includes("toothpaste") || text.includes("lotion") || text.includes("sunscreen")) {
-    return "Health and Beauty";
-  } else if (text.includes("towels") || text.includes("paper") || text.includes("toilet paper") || text.includes("trash bags") || text.includes("dish soap")) {
-    return "Household";
-  } else if (text.includes("laptop") || text.includes("television") || text.includes("smartphone") || text.includes("headphones") || text.includes("tablet")) {
-    return "Electronics";
-  } else {
-    return "Uncategorized";
+  if (preferredStore) {
+    matches = matches.filter(product => product.store.toLowerCase() === preferredStore.toLowerCase());
   }
+  
+  return matches;
+};
+
+// Process shopping list text into individual items
+export const processShoppingList = async (
+  listText: string,
+  callback: (item: ShoppingListItem) => void
+): Promise<ShoppingListItem[]> => {
+  // Split by commas or new lines
+  const itemTexts = listText
+    .split(/[,\n]+/)
+    .map(item => item.trim())
+    .filter(item => item.length > 0);
+  
+  const items: ShoppingListItem[] = [];
+  
+  try {
+    for (const itemText of itemTexts) {
+      // Generate a proper UUID instead of a string ID
+      const itemId = crypto.randomUUID();
+      
+      // Create initial item
+      const newItem: ShoppingListItem = {
+        id: itemId,
+        text: itemText,
+        category: "Uncategorized",
+        quantity: 1,
+        isProcessing: true
+      };
+      
+      // Add to items list
+      items.push(newItem);
+      callback(newItem);
+      
+      try {
+        console.log(`Processing item "${itemText}"...`);
+        
+        // Categorize the item using the edge function
+        const category = await categorizeShoppingItem(itemText);
+        console.log(`Item "${itemText}" categorized as "${category}"`);
+        
+        // Find matching products
+        const matchingProducts = await findMatchingProducts(itemText, category);
+        
+        // Update the item with category and product
+        const updatedItem: ShoppingListItem = {
+          ...newItem,
+          category,
+          product: matchingProducts.length > 0 ? matchingProducts[0] : undefined,
+          isProcessing: false
+        };
+        
+        // Replace the item in the list
+        const index = items.findIndex(item => item.id === itemId);
+        if (index !== -1) {
+          items[index] = updatedItem;
+        }
+        
+        callback(updatedItem);
+      } catch (error) {
+        console.error(`Error processing item "${itemText}":`, error);
+        // Update the item to show it's no longer processing but had an error
+        const index = items.findIndex(item => item.id === itemId);
+        if (index !== -1) {
+          items[index].isProcessing = false;
+          callback(items[index]);
+        }
+        
+        toast(`Failed to process "${itemText}". Please try again.`);
+      }
+    }
+    
+    return items;
+  } catch (error) {
+    console.error("Error processing shopping list:", error);
+    toast("Failed to process shopping list. Please try again.");
+    return items;
+  }
+};
+
+// Function to simulate checkout - updated to match how it's called
+export const checkoutCart = async (items: ShoppingListItem[]): Promise<boolean> => {
+  // Simulate checkout process delay
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // In a real app, this would redirect to the store's API
+  // For demo, we'll just return true
+  return true;
 };
 
 // Mock product database
@@ -358,114 +441,3 @@ const mockProducts: Product[] = [
     inStock: true,
   },
 ];
-
-// Find matching products based on text and category
-export const findMatchingProducts = async (
-  text: string, 
-  category: ProductCategory,
-  preferredStore?: string
-): Promise<Product[]> => {
-  text = text.toLowerCase();
-  
-  let matches = mockProducts.filter(product => {
-    const nameMatches = product.name.toLowerCase().includes(text);
-    const categoryMatches = product.category === category;
-    
-    return nameMatches && categoryMatches;
-  });
-
-  if (preferredStore) {
-    matches = matches.filter(product => product.store.toLowerCase() === preferredStore.toLowerCase());
-  }
-  
-  return matches;
-};
-
-// Process shopping list text into individual items
-export const processShoppingList = async (
-  listText: string,
-  callback: (item: ShoppingListItem) => void
-): Promise<ShoppingListItem[]> => {
-  // Split by commas or new lines
-  const itemTexts = listText
-    .split(/[,\n]+/)
-    .map(item => item.trim())
-    .filter(item => item.length > 0);
-  
-  const items: ShoppingListItem[] = [];
-  
-  try {
-    for (const itemText of itemTexts) {
-      // Generate a proper UUID instead of a string ID
-      const itemId = crypto.randomUUID();
-      
-      // Create initial item
-      const newItem: ShoppingListItem = {
-        id: itemId,
-        text: itemText,
-        category: "Uncategorized",
-        quantity: 1,
-        isProcessing: true
-      };
-      
-      // Add to items list
-      items.push(newItem);
-      callback(newItem);
-      
-      try {
-        console.log(`Processing item "${itemText}"...`);
-        
-        // Categorize the item using the edge function
-        const category = await categorizeShoppingItem(itemText);
-        console.log(`Item "${itemText}" categorized as "${category}"`);
-        
-        // Find matching products
-        const matchingProducts = await findMatchingProducts(itemText, category);
-        
-        // Update the item with category and product
-        const updatedItem: ShoppingListItem = {
-          ...newItem,
-          category,
-          product: matchingProducts.length > 0 ? matchingProducts[0] : undefined,
-          isProcessing: false
-        };
-        
-        // Replace the item in the list
-        const index = items.findIndex(item => item.id === itemId);
-        if (index !== -1) {
-          items[index] = updatedItem;
-        }
-        
-        callback(updatedItem);
-      } catch (error) {
-        console.error(`Error processing item "${itemText}":`, error);
-        // Update the item to show it's no longer processing but had an error
-        const index = items.findIndex(item => item.id === itemId);
-        if (index !== -1) {
-          items[index].isProcessing = false;
-          callback(items[index]);
-        }
-        
-        // Fix the toast calls to use the correct format for sonner
-        toast(`Failed to process "${itemText}". Please try again.`);
-      }
-    }
-    
-    return items;
-  } catch (error) {
-    console.error("Error processing shopping list:", error);
-    // Fix the toast calls to use the correct format for sonner
-    toast("Failed to process shopping list. Please try again.");
-    return items;
-  }
-};
-
-// Function to simulate checkout - updated to match how it's called
-export const checkoutCart = async (items: ShoppingListItem[]): Promise<boolean> => {
-  // Simulate checkout process delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // In a real app, this would redirect to the store's API
-  // For demo, we'll just return true
-  return true;
-};

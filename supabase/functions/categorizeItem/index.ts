@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { HfInference } from 'https://esm.sh/@huggingface/inference@2.3.2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,28 +31,56 @@ serve(async (req) => {
       )
     }
 
-    // Simple categorization logic - for demonstration, in reality you would use an AI model here
-    // This is a fallback to ensure the endpoint works even without Hugging Face
     let category = "Uncategorized"
     
-    const textLower = text.toLowerCase()
-    
-    if (textLower.includes("milk") || textLower.includes("cheese") || textLower.includes("yogurt")) {
-      category = "Dairy"
-    } else if (textLower.includes("apple") || textLower.includes("banana") || textLower.includes("vegetable")) {
-      category = "Produce"
-    } else if (textLower.includes("detergent") || textLower.includes("soap") || textLower.includes("cleaner")) {
-      category = "Cleaning Supplies"
-    } else if (textLower.includes("pasta") || textLower.includes("rice") || textLower.includes("cereal")) {
-      category = "Pantry"
-    } else if (textLower.includes("coffee") || textLower.includes("tea") || textLower.includes("juice")) {
-      category = "Beverages"
-    } else if (textLower.includes("shampoo") || textLower.includes("toothpaste")) {
-      category = "Health and Beauty"
-    } else if (textLower.includes("towels") || textLower.includes("trash bags")) {
-      category = "Household"
-    } else if (textLower.includes("laptop") || textLower.includes("phone")) {
-      category = "Electronics"
+    try {
+      // Initialize Hugging Face with the token from environment variables
+      const hf = new HfInference(Deno.env.get("HUGGINGFACE_TOKEN"))
+      
+      // Create a proper prompt for the classification task
+      const prompt = `
+        Categorize this grocery item into one of these categories:
+        Dairy, Produce, Cleaning Supplies, Pantry, Beverages, Health and Beauty, Household, Electronics, or Uncategorized.
+        
+        Item: ${text}
+        
+        Category:
+      `
+      
+      // Call Hugging Face for classification
+      const response = await hf.textGeneration({
+        model: "google/flan-t5-large",
+        inputs: prompt,
+        parameters: {
+          max_length: 32,
+          temperature: 0.1,
+        },
+      })
+      
+      // Extract the category from the response
+      if (response && response.generated_text) {
+        // Clean up the response
+        const generatedText = response.generated_text.trim()
+        
+        // Check if the response is one of our valid categories
+        const validCategories = ["Dairy", "Produce", "Cleaning Supplies", "Pantry", "Beverages", 
+                                "Health and Beauty", "Household", "Electronics", "Uncategorized"]
+        
+        // Find a matching category in the response
+        for (const validCategory of validCategories) {
+          if (generatedText.includes(validCategory)) {
+            category = validCategory
+            break
+          }
+        }
+      }
+      
+      console.log(`Hugging Face categorized "${text}" as "${category}"`)
+      
+    } catch (hfError) {
+      // Log the error but continue with the default category
+      console.error('Error using Hugging Face for categorization:', hfError)
+      category = "Uncategorized"
     }
 
     return new Response(
