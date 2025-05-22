@@ -49,7 +49,7 @@ serve(async (req) => {
       
       // Call Hugging Face for classification
       const response = await hf.textGeneration({
-        model: "google/flan-t5-large",
+        model: "distilbert-base-uncased-finetuned-sst-2-english",
         inputs: prompt,
         parameters: {
           max_length: 32,
