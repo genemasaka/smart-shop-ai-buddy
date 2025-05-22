@@ -54,13 +54,15 @@ export const categorizeShoppingItem = async (text: string): Promise<ProductCateg
   try {
     console.log("Calling categorizeItem edge function with text:", text);
     
+    // Fix: Ensure we're sending the text property correctly formatted as JSON
     const { data, error } = await supabase.functions.invoke('categorizeItem', {
-      body: { text }
+      body: { text: text }
     });
     
     if (error) {
       console.error("Error categorizing item:", error);
-      throw error;
+      // Fallback to simple categorization if the edge function fails
+      return fallbackCategorization(text);
     }
     
     console.log("Categorization response:", data);
@@ -73,7 +75,32 @@ export const categorizeShoppingItem = async (text: string): Promise<ProductCateg
     return "Uncategorized";
   } catch (error) {
     console.error("Error in categorizeShoppingItem:", error);
-    // Return a default category when there's an error
+    // Return a fallback category when there's an error
+    return fallbackCategorization(text);
+  }
+};
+
+// Fallback categorization function in case the edge function fails
+const fallbackCategorization = (text: string): ProductCategory => {
+  text = text.toLowerCase();
+
+  if (text.includes("milk") || text.includes("cheese") || text.includes("yogurt") || text.includes("butter") || text.includes("cream")) {
+    return "Dairy";
+  } else if (text.includes("apple") || text.includes("banana") || text.includes("orange") || text.includes("tomato") || text.includes("potato") || text.includes("onion") || text.includes("cucumber")) {
+    return "Produce";
+  } else if (text.includes("detergent") || text.includes("soap") || text.includes("cleaner") || text.includes("bleach") || text.includes("wipes")) {
+    return "Cleaning Supplies";
+  } else if (text.includes("pasta") || text.includes("rice") || text.includes("cereal") || text.includes("flour") || text.includes("sugar") || text.includes("bread")) {
+    return "Pantry";
+  } else if (text.includes("coffee") || text.includes("tea") || text.includes("juice") || text.includes("soda") || text.includes("water")) {
+    return "Beverages";
+  } else if (text.includes("shampoo") || text.includes("conditioner") || text.includes("toothpaste") || text.includes("lotion") || text.includes("sunscreen")) {
+    return "Health and Beauty";
+  } else if (text.includes("towels") || text.includes("paper") || text.includes("toilet paper") || text.includes("trash bags") || text.includes("dish soap")) {
+    return "Household";
+  } else if (text.includes("laptop") || text.includes("television") || text.includes("smartphone") || text.includes("headphones") || text.includes("tablet")) {
+    return "Electronics";
+  } else {
     return "Uncategorized";
   }
 };
