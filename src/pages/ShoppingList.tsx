@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { ShoppingListInput } from "@/components/shopping/ShoppingListInput";
 import { ShoppingCart } from "@/components/shopping/ShoppingCart";
-import { ShoppingListItem, processShoppingList, Product } from "@/services/productService";
+import { ShoppingListItem, processShoppingList, Product, ProductCategory } from "@/services/productService";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { createShoppingList, saveShoppingListItems } from "@/services/shoppingListService";
